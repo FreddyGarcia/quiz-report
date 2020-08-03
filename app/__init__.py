@@ -1,18 +1,19 @@
-from flask import Flask, render_template, jsonify, Response
+from flask import Flask, render_template, jsonify, Response, session, send_file
 from pymongo import MongoClient
 from bson.json_util import dumps
 from pandas import DataFrame
+from tempfile import TemporaryFile
 
 app = Flask(__name__)
+app.secret_key = b'nly:6LejsYJEH'
+
 client = MongoClient("mongodb+srv://readonly:6LejsYJEHZDe5qZF@cluster0-6iwz3.mongodb.net/british-quiz-bot?authSource=admin&replicaSet=Cluster0-shard-0&readPreference=primary&appname=MongoDB%20Compass&ssl=true")
 
 db = client['british-quiz-bot']
-questions = db.questions
-tests = db.tests
 
 
 def get_tests_data():
-    query = tests.find({}, { 
+    query = db.tests.find({}, { 
         'questions.answer': True,
         'questions.question': True,
         'questions.answeredCorrectly': True
@@ -30,7 +31,7 @@ def get_tests_data():
 
 
 def get_questions_data():
-    query = questions.find({}, {
+    query = db.questions.find({}, {
         'fields.question_text': True,
         'fields.airtable_id': True,
         'fields.A': True,
@@ -90,18 +91,36 @@ def prepare_data(questions, tests):
     df_questions['Attemps'] = df_questions['Correct'] + df_questions['Wrong']
     df_questions['% Correct'] = df_questions['Correct'] / df_questions['Attemps']
 
-    return questions
+    return df_questions
+
+
+@app.route('/download')
+def download_file():
+    excel_file = session.get('file')
+
+    import ipdb; ipdb.set_trace()
+
+    if excel_file:
+        return send_file(excel_file, as_attachment=True)
+    
+    return '', 404
 
 
 @app.route('/questions')
 def questions():
     # retrieve records from db
     questions = get_questions_data()
-    tests = get_tests_data()
+    # tests = get_tests_data()
 
     # perform calculations
-    df_questions = prepare_data(questions, tests)
-    json = df_questions.to_json(orient='records')
+    # df_questions = prepare_data(questions, tests)
+    # json = df_questions.to_json(orient='records')
+
+    df_questions = DataFrame(questions)
+    writer = TemporaryFile()
+    df_questions.to_excel(writer, sheet_name='questions')
+
+    session['file'] = writer.name
 
     # define response
     res = Response(json)
