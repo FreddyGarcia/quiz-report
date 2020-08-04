@@ -1,13 +1,13 @@
 import os
-from flask import Flask, render_template, jsonify, Response, session, send_file
+from flask import Flask, render_template, Response
+from flask_socketio import SocketIO
 from pymongo import MongoClient
-from bson.json_util import dumps
 from pandas import DataFrame
-from tempfile import TemporaryFile
-from uuid import uuid4
+from json import loads
 
 app = Flask(__name__)
 app.secret_key = b'nly:6LejsYJEH'
+socketio = SocketIO(app)
 
 APP_DIR = os.getcwd()
 MONGO_CLIENT = MongoClient("mongodb+srv://readonly:6LejsYJEHZDe5qZF@cluster0-6iwz3.mongodb.net/british-quiz-bot?authSource=admin&replicaSet=Cluster0-shard-0&readPreference=primary&appname=MongoDB%20Compass&ssl=true")
@@ -19,7 +19,7 @@ def get_tests_data():
         'questions.answer': True,
         'questions.question': True,
         'questions.answeredCorrectly': True
-    })
+    }).limit(500)
 
     rows = list(map( lambda x: dict(test_id=x['_id'], questions=x['questions']) , query ))
     questions = []
@@ -95,23 +95,23 @@ def prepare_data(questions, tests):
     df_questions['percent_correct'] = df_questions['percent_correct'].round(2).fillna(0)
     return df_questions
 
-
-@app.route('/questions')
+@socketio.on('questions')
 def questions():
+
     # retrieve records from MONGO_DB
     questions = get_questions_data()
     tests = get_tests_data()
 
     # perform calculations
     df_questions = prepare_data(questions, tests)
-    json = df_questions.to_json(orient='records')
+    json = loads(df_questions.to_json(orient='records'))
 
-    # define response
-    res = Response(json)
-    res.headers['Content-Type'] = 'application/json'
-
-    return res
+    socketio.emit('loaded', json)
 
 @app.route('/')
 def index():
     return render_template('index.html')
+
+
+if __name__ == '__main__':
+    socketio.run(app)

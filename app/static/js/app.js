@@ -1,6 +1,4 @@
-let getQuestions = function () {
-
-}
+var socket = io();
 
 var app = new Vue({
     el: '#app',
@@ -9,19 +7,19 @@ var app = new Vue({
         dt: null,
         columns: [
             { data: 'question_text', width: "40%", selected: true },
-            { data: 'A' },
-            { data: 'B' },
-            { data: 'C' },
-            { data: 'D' },
-            { data: 'chose_a' },
-            { data: 'chose_b' },
-            { data: 'chose_c' },
-            { data: 'chose_d' },
-            { data: 'wrong', selected: true },
-            { data: 'correct', selected: true },
-            { data: 'attemps', selected: true },
-            { data: 'percent_correct', selected: true },
-            { data: 'airtable_id', selected: true },
+            { data: 'A', width: "5%" },
+            { data: 'B', width: "5%" },
+            { data: 'C', width: "5%" },
+            { data: 'D', width: "5%" },
+            { data: 'chose_a', width: "5%" },
+            { data: 'chose_b', width: "5%" },
+            { data: 'chose_c', width: "5%" },
+            { data: 'chose_d', width: "5%" },
+            { data: 'wrong', width: "5%", selected: true },
+            { data: 'correct', width: "5%", selected: true },
+            { data: 'attemps', width: "5%", selected: true },
+            { data: 'percent_correct', width: "5%", selected: true },
+            { data: 'airtable_id', width: "10%", selected: true },
         ]
     },
     methods: {
@@ -36,34 +34,29 @@ var app = new Vue({
             this.dt.columns().visible(true);
         }
     },
-    mounted() {
-        axios
-            .get('/questions')
-            .then(response => {
-                this.dt = $('#questions').DataTable({
-                    dom: 'frBtip',
-                    "pageLength": 8,
-                    ajax: {
-                        url: '/questions',
-                        dataSrc: function(json) {
-                            $('.spinner').css({'display' : 'none'});
-                            return json
-                        }
-                    },
-                    responsive: true,
-                    processing: false,
-                    // language: {
-                    //     loadingRecords: '&nbsp;',
-                    //     processing: '<div class="spinner"></div>'
-                    // },
-                    columns: this.columns,
-                    buttons: [ { extend: 'excel', title: null, className: 'btn-light', text : 'Download as Excel' } ]
-                })
-
-                this.columns.forEach((col, i) => {
-                    var column = this.dt.column(i);
-                    column.visible(col.selected || false)
-                });
-            })
-    }
 })
+
+socket.on('connect', function() {
+    socket.emit('questions');
+
+    socket.on('loaded', function(data){
+        app.dt = $('#questions').DataTable({
+            data : data,
+            dom: 'frBtip',
+            "pageLength": 8,
+            responsive: true,
+            processing: false,
+            language: {
+                loadingRecords: '&nbsp;',
+                processing: '<div class="spinner"></div>'
+            },
+            columns: app.columns,
+            buttons: [ { extend: 'excel', title: null, className: 'btn-light', text : 'Download as Excel' } ]
+        })
+
+        app.columns.forEach((col, i) => {
+            var column = app.dt.column(i);
+            column.visible(col.selected || false)
+        });
+    })
+});
