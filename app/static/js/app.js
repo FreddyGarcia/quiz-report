@@ -1,4 +1,3 @@
-var socket = io();
 
 var app = new Vue({
     el: '#app',
@@ -34,29 +33,28 @@ var app = new Vue({
             this.dt.columns().visible(true);
         }
     },
-})
-
-socket.on('connect', function() {
-    socket.emit('questions');
-
-    socket.on('loaded', function(data){
-        app.dt = $('#questions').DataTable({
-            data : data,
+    mounted() {
+        this.dt = $('#questions').DataTable({
+            ajax : {
+                url : '/questions',
+                dataSrc : '',
+                error: function (xhr, error, code) { alert("Question data is still being generated, please be patient") }
+            },
             dom: 'frBtip',
             "pageLength": 8,
             responsive: true,
-            processing: false,
+            processing: true,
             language: {
                 loadingRecords: '&nbsp;',
                 processing: '<div class="spinner"></div>'
             },
-            columns: app.columns,
+            columns: this.columns,
             buttons: [ { extend: 'excel', title: null, className: 'btn-light', text : 'Download as Excel' } ]
         })
 
-        app.columns.forEach((col, i) => {
-            var column = app.dt.column(i);
+        this.columns.forEach((col, i) => {
+            var column = this.dt.column(i);
             column.visible(col.selected || false)
-        });
-    })
-});
+        })
+    }
+})

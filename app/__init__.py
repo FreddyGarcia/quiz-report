@@ -1,17 +1,19 @@
 import os
-from flask import Flask, render_template, Response
-from flask_socketio import SocketIO
+from flask import Flask, render_template, jsonify
 from pymongo import MongoClient
 from pandas import DataFrame
 from json import loads
+from threading import Thread
+from time import sleep
 
 app = Flask(__name__)
 app.secret_key = b'nly:6LejsYJEH'
-socketio = SocketIO(app)
 
 APP_DIR = os.getcwd()
 MONGO_CLIENT = MongoClient("mongodb+srv://readonly:6LejsYJEHZDe5qZF@cluster0-6iwz3.mongodb.net/british-quiz-bot?authSource=admin&replicaSet=Cluster0-shard-0&readPreference=primary&appname=MongoDB%20Compass&ssl=true")
 MONGO_DB = MONGO_CLIENT['british-quiz-bot']
+DATA_FILE = os.path.join(APP_DIR, 'static', 'data.json')
+REPORT_GENERATION_INTERVAL = 600
 
 
 def get_tests_data():
@@ -19,7 +21,7 @@ def get_tests_data():
         'questions.answer': True,
         'questions.question': True,
         'questions.answeredCorrectly': True
-    }).limit(500)
+    })
 
     rows = list(map( lambda x: dict(test_id=x['_id'], questions=x['questions']) , query ))
     questions = []
@@ -95,20 +97,36 @@ def prepare_data(questions, tests):
     df_questions['percent_correct'] = df_questions['percent_correct'].round(2).fillna(0)
     return df_questions
 
-@socketio.on('questions')
+
+def generate_questions_report():
+
+    while True:
+        # retrieve records from MONGO_DB
+        questions = get_questions_data()
+        tests = get_tests_data()
+
+        # perform calculations
+        df_questions = prepare_data(questions, tests)
+        # export to json string
+        json = df_questions.to_json(orient='records')
+        # write file
+        with open(DATA_FILE, 'w') as f: f.write(json)
+        # wait to next loop
+        sleep(REPORT_GENERATION_INTERVAL)
+
+
+@app.route('/questions')
 def questions():
+    # read data file content
+    with open(DATA_FILE) as f: content = loads(f.read())
+    # return json response
+    return jsonify(content)
 
-    # retrieve records from MONGO_DB
-    questions = get_questions_data()
-    tests = get_tests_data()
-
-    # perform calculations
-    df_questions = prepare_data(questions, tests)
-    json = loads(df_questions.to_json(orient='records'))
-
-    socketio.emit('loaded', json)
 
 @app.route('/')
 def index():
     return render_template('index.html')
 
+# generate questions report periodically
+thread = Thread(target=generate_questions_report)
+thread.start()
