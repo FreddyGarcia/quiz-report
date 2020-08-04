@@ -19,7 +19,7 @@ def get_tests_data():
         'questions.answer': True,
         'questions.question': True,
         'questions.answeredCorrectly': True
-    }).limit(2000)
+    }).limit(500)
 
     rows = list(map( lambda x: dict(test_id=x['_id'], questions=x['questions']) , query ))
     questions = []
