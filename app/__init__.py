@@ -12,7 +12,7 @@ app.secret_key = b'nly:6LejsYJEH'
 APP_DIR = os.getcwd()
 MONGO_CLIENT = MongoClient("mongodb+srv://readonly:6LejsYJEHZDe5qZF@cluster0-6iwz3.mongodb.net/british-quiz-bot?authSource=admin&replicaSet=Cluster0-shard-0&readPreference=primary&appname=MongoDB%20Compass&ssl=true")
 MONGO_DB = MONGO_CLIENT['british-quiz-bot']
-DATA_FILE = os.path.join(APP_DIR, 'static', 'data.json')
+DATA_FILE = os.path.join(APP_DIR, 'app', 'static', 'data.json')
 REPORT_GENERATION_INTERVAL = 600
 
 
@@ -118,9 +118,12 @@ def generate_questions_report():
 @app.route('/questions')
 def questions():
     # read data file content
-    with open(DATA_FILE) as f: content = loads(f.read())
+    try:
+        with open(DATA_FILE) as f: content = loads(f.read())
+        return jsonify(content)
+    except FileNotFoundError as ex:
+        return 'File not found', 500
     # return json response
-    return jsonify(content)
 
 
 @app.route('/')
