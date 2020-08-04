@@ -5,14 +5,105 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quiz Report</title>
+
+    <link rel="stylesheet" href="/static/node_modules/bootstrap/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/static/node_modules/datatables.net-dt/css/jquery.dataTables.min.css">
+
+    <style>
+        @keyframes spinner {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .spinner:before {
+            content: '';
+            box-sizing: border-box;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 30px;
+            height: 30px;
+            margin-top: 100px;
+            margin-left: -10px;
+            border-radius: 50%;
+            border: 2px solid #ccc;
+            border-top-color: #333;
+            animation: spinner .6s linear infinite;
+        }
+    </style>
+
 </head>
 
 <body>
-    <div class="container" id='app'>
-        [[message]]
+    <div class="container-fluid" id='app'>
+
+
+        <div class='row'>
+            <div class='col-10 offset-1'>
+
+                <nav class="navbar navbar-light" style="background-color: #efefef;">
+                    <a class="navbar-brand" href="#">Quiz Report</a>
+                </nav>
+
+                <br>
+                <div class="card">
+                    <div class="card-body">
+                        <div class="form-check form-check-inline" v-for='(col, index) in columns'>
+                            <input class="form-check-input" type="checkbox" @change="toogleVisible(col, index)"
+                                v-bind:id="col.data" v-model='col.selected'>
+                            <label class="form-check-label" v-bind:for="col.data">
+                                [[col.data]]
+                            </label>
+                        </div>
+
+                        <div class="form-check form-check-inline float-right">
+                            <button class="btn btn-primary" v-on:click='selectAll()'>Select All</button>
+                        </div>
+                    </div>
+                </div>
+                <br>
+
+                <div class="spinner"></div>
+
+                <table id='questions' class="stripe hover row-border order-column" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th>Question Text</th>
+                            <th>A</th>
+                            <th>B</th>
+                            <th>C</th>
+                            <th>D</th>
+                            <th>Chose A</th>
+                            <th>Chose B</th>
+                            <th>Chose C</th>
+                            <th>Chose D</th>
+                            <th>Wrong</th>
+                            <th>Correct</th>
+                            <th>Attemps</th>
+                            <th>% Correct</th>
+                            <th>AirtableID</th>
+                        </tr>
+                    </thead>
+                </table>
+            </div>
+        </div>
+
+
     </div>
+
+    <script src='/static/node_modules/jszip/dist/jszip.min.js'></script>
+    <script src='/static/node_modules/jquery/dist/jquery.min.js'></script>
+    <script src='/static/node_modules/bootstrap/dist/js/bootstrap.min.js'></script>
     <script src="/static/node_modules/axios/dist/axios.min.js"></script>
     <script src="/static/node_modules/vue/dist/vue.min.js"></script>
+    <script src="/static/node_modules/datatables.net/js/jquery.dataTables.min.js"></script>
+    <script src="/static/node_modules/datatables.net-dt/js/dataTables.dataTables.min.js"></script>
+    <script src='/static/node_modules/datatables.net-fixedcolumns/js/dataTables.fixedColumns.min.js'></script>
+    <script src='/static/node_modules/datatables.net-buttons/js/dataTables.buttons.min.js'></script>
+    <script src='/static/node_modules/datatables.net-buttons/js/buttons.html5.min.js'></script>
+    <script src='/static/node_modules/datatables.net-buttons/js/buttons.flash.min.js'></script>
+    <script src='/static/node_modules/datatables.net-buttons/js/buttons.colVis.min.js'></script>
     <script src="/static/js/app.js"></script>
 </body>
 
